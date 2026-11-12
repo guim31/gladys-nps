@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-nps",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Gladys Assistant integration: alerts, closures and events of the US national parks, from the National Park Service API.",
   "type": "module",
   "main": "index.js",
   "scripts": {
