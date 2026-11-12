@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-12
+
 ### Added
 
 - The US national parks you follow, from the official National Park Service
@@ -24,3 +26,6 @@ the notes of the version's GitHub Release.
 - A clear status on the integration page for an invalid key or a reached
   hourly limit; `DEMO_KEY` when no key is typed.
 - Documentation in English, French, German and Spanish.
+
+[Unreleased]: https://github.com/guim31/gladys-nps/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-nps/releases/tag/v1.0.0
