@@ -31,16 +31,23 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+index.js                          SDK wiring only (src/app.js registers the handlers)
+src/app.js                        handlers on a GladysIntegration or the SDK's fake Gladys
+src/service.js                    runtime: parks read, own timer, discovery, states, trigger, status
+src/nps.js                        NPS API client: alerts, events, parks (key in X-Api-Key)
+src/http.js                       fetch with timeout, size cap, api.data.gov error code
+src/time.js                       park-local event times (zone per park), next event
+src/devices.js                    park device and its states
+src/parks.js                      the 63 national parks offered in the form, state time zones
+src/store.js                      alerts already seen, in /data/nps.json
+src/messages.js                   texts in en/fr/de/es
+src/scenes.js                     scene action read_alerts
+src/widgets.js                    widget alerts
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (mandatory)
 test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+test/fixtures/api/                real API answers (2026-11-12), see test/fixtures/README.md
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -251,3 +258,20 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Parcs nationaux américains (API NPS)
+
+- API `https://developer.nps.gov/api/v1`, clé api.data.gov gratuite (1 000 requêtes/h) ; **`DEMO_KEY` mesurée à
+  10 requêtes/h par adresse le 12/11/2026** (en-tête `x-ratelimit-limit: 10`), pas les 30 annoncés : d'où un seul
+  appel groupé `/alerts?parkCode=a,b,c` par cycle, `/events` toutes les 6 h, et un cycle de 60 min par défaut. La clé
+  part dans l'en-tête `X-Api-Key`, jamais dans l'URL.
+- Refus d'api.data.gov en JSON `{ error: { code, message } }` : 403 `API_KEY_INVALID` / `API_KEY_MISSING`, 429
+  `OVER_RATE_LIMIT` (fenêtre glissante d'une heure, pas de `Retry-After` : pause d'une heure). Le code est gardé
+  sur `HttpError.code` et rendu par `setConnectionStatus(false, {en,fr,de,es})`.
+- `/events` plafonne `pageSize` à **50** quoi qu'on demande : pagination par `pageNumber`, quatre pages au plus.
+  Dates (`dates[]`) et heures (`times[0].timestart`, « 06:30 PM ») sont en heure locale du parc **sans fuseau** :
+  fuseau par parc dans `src/parks.js` (Arizona sans heure d'été, Yellowstone en Mountain…), par État pour les autres
+  sites. `cancelleddatelist` retire des dates.
+- Catégories d'alerte : `Park Closure`, `Danger`, `Caution`, `Information` ; une « Park Closure » est souvent
+  partielle (route, sentier) : la fonctionnalité s'appelle « Fermeture en cours », pas « Parc fermé ».
+- L'emblème du NPS (pointe de flèche) est protégé : cover en pictogramme maison.

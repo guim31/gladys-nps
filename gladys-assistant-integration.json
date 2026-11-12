@@ -1,177 +1,1118 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "US National Parks",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Alerts, closures and events of the US national parks you follow (Yosemite, Yellowstone…).",
+    "fr": "Alertes, fermetures et événements des parcs nationaux américains suivis (Yosemite, Yellowstone…).",
+    "de": "Warnungen, Schließungen und Veranstaltungen der US-Nationalparks, die du verfolgst (Yosemite…).",
+    "es": "Alertas, cierres y eventos de los parques nacionales de EE. UU. que sigue (Yosemite, Yellowstone…)."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
-  "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "docker_image": "ghcr.io/guim31/gladys-nps:1.0.0",
+  "gladys_version": ">=5.3.0",
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-nps/main/cover.png",
+  "categories": ["leisure", "environment"],
+  "transports": ["cloud"],
+  "countries": ["US"],
+  "keywords": [
+    "National Park Service",
+    "NPS",
+    "national park",
+    "parc national",
+    "Nationalpark",
+    "parque nacional",
+    "Yosemite",
+    "Yellowstone",
+    "Grand Canyon",
+    "alerts"
+  ],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "How it works",
+        "fr": "Fonctionnement",
+        "de": "So funktioniert es",
+        "es": "Funcionamiento"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Choose your parks and save: each park appears in the Discover tab, add it to Gladys. Alerts and events come from the official API of the US National Park Service (NPS).",
+        "fr": "Choisissez vos parcs et enregistrez : chaque parc apparaît dans l'onglet Découverte, ajoutez-le à Gladys. Alertes et événements viennent de l'API officielle du National Park Service (NPS).",
+        "de": "Wähle deine Parks und speichere: jeder Park erscheint im Tab „Entdecken“, füge ihn zu Gladys hinzu. Warnungen und Veranstaltungen stammen aus der offiziellen API des National Park Service (NPS).",
+        "es": "Elija sus parques y guarde: cada parque aparece en la pestaña Descubrir, añádalo a Gladys. Alertas y eventos provienen de la API oficial del National Park Service (NPS)."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-nps/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide de configuration",
+            "de": "Einrichtungsanleitung",
+            "es": "Guía de configuración"
+          }
+        },
+        {
+          "url": "https://www.nps.gov/subjects/developer/get-started.htm",
+          "label": {
+            "en": "Get a free API key",
+            "fr": "Obtenir une clé API gratuite",
+            "de": "Kostenlosen API-Schlüssel holen",
+            "es": "Obtener una clave API gratuita"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "key": "api_key",
+      "type": "secret",
       "required": false,
-      "default": "celsius",
+      "label": {
+        "en": "NPS API key",
+        "fr": "Clé API NPS",
+        "de": "NPS-API-Schlüssel",
+        "es": "Clave API NPS"
+      },
+      "description": {
+        "en": "Free, from api.data.gov (link above). Empty: DEMO_KEY, limited to a few requests an hour.",
+        "fr": "Gratuite, sur api.data.gov (lien ci-dessus). Vide : DEMO_KEY, limitée à quelques requêtes par heure.",
+        "de": "Kostenlos, bei api.data.gov (Link oben). Leer: DEMO_KEY, auf wenige Anfragen pro Stunde begrenzt.",
+        "es": "Gratuita, en api.data.gov (enlace de arriba). Vacía: DEMO_KEY, limitada a pocas solicitudes por hora."
+      }
+    },
+    {
+      "key": "parks",
+      "type": "multi_select",
+      "default": [],
+      "required": false,
+      "label": {
+        "en": "National parks",
+        "fr": "Parcs nationaux",
+        "de": "Nationalparks",
+        "es": "Parques nacionales"
+      },
+      "description": {
+        "en": "The 63 national parks. Other NPS sites: the field below.",
+        "fr": "Les 63 parcs nationaux. Autres sites du NPS : champ ci-dessous.",
+        "de": "Die 63 Nationalparks. Andere NPS-Stätten: Feld darunter.",
+        "es": "Los 63 parques nacionales. Otros sitios del NPS: el campo de abajo."
+      },
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "acad",
+          "label": {
+            "en": "Acadia National Park",
+            "fr": "Acadia National Park",
+            "de": "Acadia National Park",
+            "es": "Acadia National Park"
+          }
+        },
+        {
+          "value": "arch",
+          "label": {
+            "en": "Arches National Park",
+            "fr": "Arches National Park",
+            "de": "Arches National Park",
+            "es": "Arches National Park"
+          }
+        },
+        {
+          "value": "badl",
+          "label": {
+            "en": "Badlands National Park",
+            "fr": "Badlands National Park",
+            "de": "Badlands National Park",
+            "es": "Badlands National Park"
+          }
+        },
+        {
+          "value": "bibe",
+          "label": {
+            "en": "Big Bend National Park",
+            "fr": "Big Bend National Park",
+            "de": "Big Bend National Park",
+            "es": "Big Bend National Park"
+          }
+        },
+        {
+          "value": "bisc",
+          "label": {
+            "en": "Biscayne National Park",
+            "fr": "Biscayne National Park",
+            "de": "Biscayne National Park",
+            "es": "Biscayne National Park"
+          }
+        },
+        {
+          "value": "blca",
+          "label": {
+            "en": "Black Canyon Of The Gunnison National Park",
+            "fr": "Black Canyon Of The Gunnison National Park",
+            "de": "Black Canyon Of The Gunnison National Park",
+            "es": "Black Canyon Of The Gunnison National Park"
+          }
+        },
+        {
+          "value": "brca",
+          "label": {
+            "en": "Bryce Canyon National Park",
+            "fr": "Bryce Canyon National Park",
+            "de": "Bryce Canyon National Park",
+            "es": "Bryce Canyon National Park"
+          }
+        },
+        {
+          "value": "cany",
+          "label": {
+            "en": "Canyonlands National Park",
+            "fr": "Canyonlands National Park",
+            "de": "Canyonlands National Park",
+            "es": "Canyonlands National Park"
+          }
+        },
+        {
+          "value": "care",
+          "label": {
+            "en": "Capitol Reef National Park",
+            "fr": "Capitol Reef National Park",
+            "de": "Capitol Reef National Park",
+            "es": "Capitol Reef National Park"
+          }
+        },
+        {
+          "value": "cave",
+          "label": {
+            "en": "Carlsbad Caverns National Park",
+            "fr": "Carlsbad Caverns National Park",
+            "de": "Carlsbad Caverns National Park",
+            "es": "Carlsbad Caverns National Park"
+          }
+        },
+        {
+          "value": "chis",
+          "label": {
+            "en": "Channel Islands National Park",
+            "fr": "Channel Islands National Park",
+            "de": "Channel Islands National Park",
+            "es": "Channel Islands National Park"
+          }
+        },
+        {
+          "value": "chir",
+          "label": {
+            "en": "Chiricahua National Park",
+            "fr": "Chiricahua National Park",
+            "de": "Chiricahua National Park",
+            "es": "Chiricahua National Park"
+          }
+        },
+        {
+          "value": "cong",
+          "label": {
+            "en": "Congaree National Park",
+            "fr": "Congaree National Park",
+            "de": "Congaree National Park",
+            "es": "Congaree National Park"
+          }
+        },
+        {
+          "value": "crla",
+          "label": {
+            "en": "Crater Lake National Park",
+            "fr": "Crater Lake National Park",
+            "de": "Crater Lake National Park",
+            "es": "Crater Lake National Park"
+          }
+        },
+        {
+          "value": "cuva",
+          "label": {
+            "en": "Cuyahoga Valley National Park",
+            "fr": "Cuyahoga Valley National Park",
+            "de": "Cuyahoga Valley National Park",
+            "es": "Cuyahoga Valley National Park"
+          }
+        },
+        {
+          "value": "deva",
+          "label": {
+            "en": "Death Valley National Park",
+            "fr": "Death Valley National Park",
+            "de": "Death Valley National Park",
+            "es": "Death Valley National Park"
+          }
+        },
+        {
+          "value": "dena",
+          "label": {
+            "en": "Denali National Park & Preserve",
+            "fr": "Denali National Park & Preserve",
+            "de": "Denali National Park & Preserve",
+            "es": "Denali National Park & Preserve"
+          }
+        },
+        {
+          "value": "drto",
+          "label": {
+            "en": "Dry Tortugas National Park",
+            "fr": "Dry Tortugas National Park",
+            "de": "Dry Tortugas National Park",
+            "es": "Dry Tortugas National Park"
+          }
+        },
+        {
+          "value": "ever",
+          "label": {
+            "en": "Everglades National Park",
+            "fr": "Everglades National Park",
+            "de": "Everglades National Park",
+            "es": "Everglades National Park"
+          }
+        },
+        {
+          "value": "gaar",
+          "label": {
+            "en": "Gates Of The Arctic National Park & Preserve",
+            "fr": "Gates Of The Arctic National Park & Preserve",
+            "de": "Gates Of The Arctic National Park & Preserve",
+            "es": "Gates Of The Arctic National Park & Preserve"
+          }
+        },
+        {
+          "value": "jeff",
+          "label": {
+            "en": "Gateway Arch National Park",
+            "fr": "Gateway Arch National Park",
+            "de": "Gateway Arch National Park",
+            "es": "Gateway Arch National Park"
+          }
+        },
+        {
+          "value": "glba",
+          "label": {
+            "en": "Glacier Bay National Park & Preserve",
+            "fr": "Glacier Bay National Park & Preserve",
+            "de": "Glacier Bay National Park & Preserve",
+            "es": "Glacier Bay National Park & Preserve"
+          }
+        },
+        {
+          "value": "glac",
+          "label": {
+            "en": "Glacier National Park",
+            "fr": "Glacier National Park",
+            "de": "Glacier National Park",
+            "es": "Glacier National Park"
+          }
+        },
+        {
+          "value": "grca",
+          "label": {
+            "en": "Grand Canyon National Park",
+            "fr": "Grand Canyon National Park",
+            "de": "Grand Canyon National Park",
+            "es": "Grand Canyon National Park"
+          }
+        },
+        {
+          "value": "grte",
+          "label": {
+            "en": "Grand Teton National Park",
+            "fr": "Grand Teton National Park",
+            "de": "Grand Teton National Park",
+            "es": "Grand Teton National Park"
+          }
+        },
+        {
+          "value": "grba",
+          "label": {
+            "en": "Great Basin National Park",
+            "fr": "Great Basin National Park",
+            "de": "Great Basin National Park",
+            "es": "Great Basin National Park"
+          }
+        },
+        {
+          "value": "grsa",
+          "label": {
+            "en": "Great Sand Dunes National Park & Preserve",
+            "fr": "Great Sand Dunes National Park & Preserve",
+            "de": "Great Sand Dunes National Park & Preserve",
+            "es": "Great Sand Dunes National Park & Preserve"
+          }
+        },
+        {
+          "value": "grsm",
+          "label": {
+            "en": "Great Smoky Mountains National Park",
+            "fr": "Great Smoky Mountains National Park",
+            "de": "Great Smoky Mountains National Park",
+            "es": "Great Smoky Mountains National Park"
+          }
+        },
+        {
+          "value": "gumo",
+          "label": {
+            "en": "Guadalupe Mountains National Park",
+            "fr": "Guadalupe Mountains National Park",
+            "de": "Guadalupe Mountains National Park",
+            "es": "Guadalupe Mountains National Park"
+          }
+        },
+        {
+          "value": "hale",
+          "label": {
+            "en": "Haleakalā National Park",
+            "fr": "Haleakalā National Park",
+            "de": "Haleakalā National Park",
+            "es": "Haleakalā National Park"
+          }
+        },
+        {
+          "value": "havo",
+          "label": {
+            "en": "Hawaiʻi Volcanoes National Park",
+            "fr": "Hawaiʻi Volcanoes National Park",
+            "de": "Hawaiʻi Volcanoes National Park",
+            "es": "Hawaiʻi Volcanoes National Park"
+          }
+        },
+        {
+          "value": "hosp",
+          "label": {
+            "en": "Hot Springs National Park",
+            "fr": "Hot Springs National Park",
+            "de": "Hot Springs National Park",
+            "es": "Hot Springs National Park"
+          }
+        },
+        {
+          "value": "indu",
+          "label": {
+            "en": "Indiana Dunes National Park",
+            "fr": "Indiana Dunes National Park",
+            "de": "Indiana Dunes National Park",
+            "es": "Indiana Dunes National Park"
+          }
+        },
+        {
+          "value": "isro",
+          "label": {
+            "en": "Isle Royale National Park",
+            "fr": "Isle Royale National Park",
+            "de": "Isle Royale National Park",
+            "es": "Isle Royale National Park"
+          }
+        },
+        {
+          "value": "jotr",
+          "label": {
+            "en": "Joshua Tree National Park",
+            "fr": "Joshua Tree National Park",
+            "de": "Joshua Tree National Park",
+            "es": "Joshua Tree National Park"
+          }
+        },
+        {
+          "value": "katm",
+          "label": {
+            "en": "Katmai National Park & Preserve",
+            "fr": "Katmai National Park & Preserve",
+            "de": "Katmai National Park & Preserve",
+            "es": "Katmai National Park & Preserve"
+          }
+        },
+        {
+          "value": "kefj",
+          "label": {
+            "en": "Kenai Fjords National Park",
+            "fr": "Kenai Fjords National Park",
+            "de": "Kenai Fjords National Park",
+            "es": "Kenai Fjords National Park"
+          }
+        },
+        {
+          "value": "kova",
+          "label": {
+            "en": "Kobuk Valley National Park",
+            "fr": "Kobuk Valley National Park",
+            "de": "Kobuk Valley National Park",
+            "es": "Kobuk Valley National Park"
+          }
+        },
+        {
+          "value": "lacl",
+          "label": {
+            "en": "Lake Clark National Park & Preserve",
+            "fr": "Lake Clark National Park & Preserve",
+            "de": "Lake Clark National Park & Preserve",
+            "es": "Lake Clark National Park & Preserve"
+          }
+        },
+        {
+          "value": "lavo",
+          "label": {
+            "en": "Lassen Volcanic National Park",
+            "fr": "Lassen Volcanic National Park",
+            "de": "Lassen Volcanic National Park",
+            "es": "Lassen Volcanic National Park"
+          }
+        },
+        {
+          "value": "maca",
+          "label": {
+            "en": "Mammoth Cave National Park",
+            "fr": "Mammoth Cave National Park",
+            "de": "Mammoth Cave National Park",
+            "es": "Mammoth Cave National Park"
+          }
+        },
+        {
+          "value": "meve",
+          "label": {
+            "en": "Mesa Verde National Park",
+            "fr": "Mesa Verde National Park",
+            "de": "Mesa Verde National Park",
+            "es": "Mesa Verde National Park"
+          }
+        },
+        {
+          "value": "mora",
+          "label": {
+            "en": "Mount Rainier National Park",
+            "fr": "Mount Rainier National Park",
+            "de": "Mount Rainier National Park",
+            "es": "Mount Rainier National Park"
+          }
+        },
+        {
+          "value": "npsa",
+          "label": {
+            "en": "National Park of American Samoa",
+            "fr": "National Park of American Samoa",
+            "de": "National Park of American Samoa",
+            "es": "National Park of American Samoa"
+          }
+        },
+        {
+          "value": "neri",
+          "label": {
+            "en": "New River Gorge National Park & Preserve",
+            "fr": "New River Gorge National Park & Preserve",
+            "de": "New River Gorge National Park & Preserve",
+            "es": "New River Gorge National Park & Preserve"
+          }
+        },
+        {
+          "value": "noca",
+          "label": {
+            "en": "North Cascades National Park",
+            "fr": "North Cascades National Park",
+            "de": "North Cascades National Park",
+            "es": "North Cascades National Park"
+          }
+        },
+        {
+          "value": "olym",
+          "label": {
+            "en": "Olympic National Park",
+            "fr": "Olympic National Park",
+            "de": "Olympic National Park",
+            "es": "Olympic National Park"
+          }
+        },
+        {
+          "value": "pefo",
+          "label": {
+            "en": "Petrified Forest National Park",
+            "fr": "Petrified Forest National Park",
+            "de": "Petrified Forest National Park",
+            "es": "Petrified Forest National Park"
+          }
+        },
+        {
+          "value": "pinn",
+          "label": {
+            "en": "Pinnacles National Park",
+            "fr": "Pinnacles National Park",
+            "de": "Pinnacles National Park",
+            "es": "Pinnacles National Park"
+          }
+        },
+        {
+          "value": "redw",
+          "label": {
+            "en": "Redwood National and State Parks",
+            "fr": "Redwood National and State Parks",
+            "de": "Redwood National and State Parks",
+            "es": "Redwood National and State Parks"
+          }
+        },
+        {
+          "value": "romo",
+          "label": {
+            "en": "Rocky Mountain National Park",
+            "fr": "Rocky Mountain National Park",
+            "de": "Rocky Mountain National Park",
+            "es": "Rocky Mountain National Park"
+          }
+        },
+        {
+          "value": "sagu",
+          "label": {
+            "en": "Saguaro National Park",
+            "fr": "Saguaro National Park",
+            "de": "Saguaro National Park",
+            "es": "Saguaro National Park"
+          }
+        },
+        {
+          "value": "seki",
+          "label": {
+            "en": "Sequoia & Kings Canyon National Parks",
+            "fr": "Sequoia & Kings Canyon National Parks",
+            "de": "Sequoia & Kings Canyon National Parks",
+            "es": "Sequoia & Kings Canyon National Parks"
+          }
+        },
+        {
+          "value": "shen",
+          "label": {
+            "en": "Shenandoah National Park",
+            "fr": "Shenandoah National Park",
+            "de": "Shenandoah National Park",
+            "es": "Shenandoah National Park"
+          }
+        },
+        {
+          "value": "thro",
+          "label": {
+            "en": "Theodore Roosevelt National Park",
+            "fr": "Theodore Roosevelt National Park",
+            "de": "Theodore Roosevelt National Park",
+            "es": "Theodore Roosevelt National Park"
+          }
+        },
+        {
+          "value": "viis",
+          "label": {
+            "en": "Virgin Islands National Park",
+            "fr": "Virgin Islands National Park",
+            "de": "Virgin Islands National Park",
+            "es": "Virgin Islands National Park"
+          }
+        },
+        {
+          "value": "voya",
+          "label": {
+            "en": "Voyageurs National Park",
+            "fr": "Voyageurs National Park",
+            "de": "Voyageurs National Park",
+            "es": "Voyageurs National Park"
+          }
+        },
+        {
+          "value": "whsa",
+          "label": {
+            "en": "White Sands National Park",
+            "fr": "White Sands National Park",
+            "de": "White Sands National Park",
+            "es": "White Sands National Park"
+          }
+        },
+        {
+          "value": "wica",
+          "label": {
+            "en": "Wind Cave National Park",
+            "fr": "Wind Cave National Park",
+            "de": "Wind Cave National Park",
+            "es": "Wind Cave National Park"
+          }
+        },
+        {
+          "value": "wrst",
+          "label": {
+            "en": "Wrangell - St Elias National Park & Preserve",
+            "fr": "Wrangell - St Elias National Park & Preserve",
+            "de": "Wrangell - St Elias National Park & Preserve",
+            "es": "Wrangell - St Elias National Park & Preserve"
+          }
+        },
+        {
+          "value": "yell",
+          "label": {
+            "en": "Yellowstone National Park",
+            "fr": "Yellowstone National Park",
+            "de": "Yellowstone National Park",
+            "es": "Yellowstone National Park"
+          }
+        },
+        {
+          "value": "yose",
+          "label": {
+            "en": "Yosemite National Park",
+            "fr": "Yosemite National Park",
+            "de": "Yosemite National Park",
+            "es": "Yosemite National Park"
+          }
+        },
+        {
+          "value": "zion",
+          "label": {
+            "en": "Zion National Park",
+            "fr": "Zion National Park",
+            "de": "Zion National Park",
+            "es": "Zion National Park"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
-      "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
-      },
+      "key": "other_parks",
+      "type": "string",
+      "default": "",
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "label": {
+        "en": "Other NPS sites",
+        "fr": "Autres sites du NPS",
+        "de": "Andere NPS-Stätten",
+        "es": "Otros sitios del NPS"
+      },
+      "description": {
+        "en": "Codes of other sites (monuments, seashores…), as in their nps.gov address, separated by commas.",
+        "fr": "Codes d'autres sites (monuments, littoraux…), comme dans leur adresse nps.gov, séparés par des virgules.",
+        "de": "Codes anderer Stätten (Monumente, Küsten…), wie in ihrer nps.gov-Adresse, durch Kommas getrennt.",
+        "es": "Códigos de otros sitios (monumentos, costas…), como en su dirección nps.gov, separados por comas."
+      },
+      "placeholder": {
+        "en": "stli, alca",
+        "fr": "stli, alca",
+        "de": "stli, alca",
+        "es": "stli, alca"
+      }
+    },
+    {
+      "key": "refresh_interval",
+      "type": "select",
+      "default": "60",
+      "label": {
+        "en": "Refresh",
+        "fr": "Rafraîchissement",
+        "de": "Aktualisierung",
+        "es": "Actualización"
+      },
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "Every 30 minutes",
+            "fr": "Toutes les 30 minutes",
+            "de": "Alle 30 Minuten",
+            "es": "Cada 30 minutos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "Every hour",
+            "fr": "Toutes les heures",
+            "de": "Jede Stunde",
+            "es": "Cada hora"
+          }
+        },
+        {
+          "value": "120",
+          "label": {
+            "en": "Every 2 hours",
+            "fr": "Toutes les 2 heures",
+            "de": "Alle 2 Stunden",
+            "es": "Cada 2 horas"
+          }
+        }
+      ]
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "default": "fr",
+      "label": {
+        "en": "Language of names and messages",
+        "fr": "Langue des noms et messages",
+        "de": "Sprache der Namen und Nachrichten",
+        "es": "Idioma de nombres y mensajes"
+      },
+      "description": {
+        "en": "Feature names (set when the park is added), texts, widget and scene sentences.",
+        "fr": "Noms des fonctionnalités (fixés à l'ajout du parc), textes, widget et phrases des scènes.",
+        "de": "Namen der Funktionen (beim Hinzufügen festgelegt), Texte, Widget und Szenensätze.",
+        "es": "Nombres de funciones (fijados al añadir el parque), textos, widget y frases de escenas."
+      },
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "English",
+            "de": "English",
+            "es": "English"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "Français",
+            "fr": "Français",
+            "de": "Français",
+            "es": "Français"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "Deutsch",
+            "fr": "Deutsch",
+            "de": "Deutsch",
+            "es": "Deutsch"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Español",
+            "fr": "Español",
+            "de": "Español",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
+      "key": "status",
+      "label": {
+        "en": "Status",
+        "fr": "État",
+        "de": "Status",
+        "es": "Estado"
+      },
+      "description": {
+        "en": "Parks followed, alerts read, last reading and errors.",
+        "fr": "Parcs suivis, alertes lues, dernière lecture et erreurs.",
+        "de": "Verfolgte Parks, gelesene Warnungen, letzte Abfrage und Fehler.",
+        "es": "Parques seguidos, alertas leídas, última lectura y errores."
+      },
+      "timeout_seconds": 30,
+      "fields": []
+    }
+  ],
+  "widgets": [
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
+      "key": "alerts",
+      "label": {
+        "en": "Park alerts",
+        "fr": "Alertes des parcs",
+        "de": "Park-Warnungen",
+        "es": "Alertas de parques"
+      },
+      "description": {
+        "en": "Current alerts of your national parks, most serious first.",
+        "fr": "Alertes en cours de vos parcs nationaux, les plus graves d'abord.",
+        "de": "Aktuelle Warnungen deiner Nationalparks, die schwersten zuerst.",
+        "es": "Alertas actuales de sus parques nacionales, las más graves primero."
+      },
+      "icon": "alert-triangle",
+      "settings": [
         {
-          "key": "device",
-          "type": "select",
+          "key": "parks",
+          "type": "multi_select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "required": false,
+          "label": {
+            "en": "Parks shown",
+            "fr": "Parcs affichés",
+            "de": "Angezeigte Parks",
+            "es": "Parques mostrados"
+          },
+          "description": {
+            "en": "Empty: every park added to Gladys.",
+            "fr": "Vide : tous les parcs ajoutés à Gladys.",
+            "de": "Leer: alle zu Gladys hinzugefügten Parks.",
+            "es": "Vacío: todos los parques añadidos a Gladys."
+          }
+        },
+        {
+          "key": "show_information",
+          "type": "boolean",
+          "default": true,
+          "required": false,
+          "label": {
+            "en": "Show the information alerts",
+            "fr": "Afficher les alertes d'information",
+            "de": "Informationsmeldungen anzeigen",
+            "es": "Mostrar las alertas de información"
+          }
+        },
+        {
+          "key": "show_summary",
+          "type": "boolean",
+          "default": true,
+          "required": false,
+          "label": {
+            "en": "Show the count per park",
+            "fr": "Afficher le nombre par parc",
+            "de": "Anzahl pro Park anzeigen",
+            "es": "Mostrar el número por parque"
+          }
+        },
+        {
+          "key": "show_link",
+          "type": "boolean",
+          "default": true,
+          "required": false,
+          "label": {
+            "en": "Show the link to nps.gov",
+            "fr": "Afficher le lien vers nps.gov",
+            "de": "Link zu nps.gov anzeigen",
+            "es": "Mostrar el enlace a nps.gov"
+          }
         }
       ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "new_alert",
+      "label": {
+        "en": "New park alert",
+        "fr": "Nouvelle alerte d'un parc",
+        "de": "Neue Park-Warnung",
+        "es": "Nueva alerta de un parque"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "The NPS posts a new alert (closure, danger…) for a park added to Gladys.",
+        "fr": "Le NPS publie une nouvelle alerte (fermeture, danger…) pour un parc ajouté à Gladys.",
+        "de": "Der NPS veröffentlicht eine neue Warnung (Schließung, Gefahr…) für einen Park in Gladys.",
+        "es": "El NPS publica una nueva alerta (cierre, peligro…) para un parque añadido a Gladys."
       },
       "fields": [
         {
-          "key": "device",
-          "type": "select",
+          "key": "park",
+          "type": "multi_select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "required": false,
+          "label": {
+            "en": "Parks",
+            "fr": "Parcs",
+            "de": "Parks",
+            "es": "Parques"
+          },
+          "description": {
+            "en": "Empty: any park.",
+            "fr": "Vide : n'importe quel parc.",
+            "de": "Leer: jeder Park.",
+            "es": "Vacío: cualquier parque."
+          }
         },
         {
-          "key": "target",
+          "key": "category",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "required": false,
+          "label": {
+            "en": "Categories",
+            "fr": "Catégories",
+            "de": "Kategorien",
+            "es": "Categorías"
+          },
+          "description": {
+            "en": "Empty: any category.",
+            "fr": "Vide : n'importe quelle catégorie.",
+            "de": "Leer: jede Kategorie.",
+            "es": "Vacío: cualquier categoría."
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "closure",
+              "label": {
+                "en": "Park closure",
+                "fr": "Fermeture",
+                "de": "Schließung",
+                "es": "Cierre"
+              }
+            },
+            {
+              "value": "danger",
+              "label": {
+                "en": "Danger",
+                "fr": "Danger",
+                "de": "Gefahr",
+                "es": "Peligro"
+              }
+            },
+            {
+              "value": "caution",
+              "label": {
+                "en": "Caution",
+                "fr": "Prudence",
+                "de": "Vorsicht",
+                "es": "Precaución"
+              }
+            },
+            {
+              "value": "information",
+              "label": {
+                "en": "Information",
+                "fr": "Information",
+                "de": "Information",
+                "es": "Información"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "park_name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Park",
+            "fr": "Parc",
+            "de": "Park",
+            "es": "Parque"
+          }
+        },
+        {
+          "key": "category_name",
+          "type": "string",
+          "label": {
+            "en": "Category",
+            "fr": "Catégorie",
+            "de": "Kategorie",
+            "es": "Categoría"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Alert title (English)",
+            "fr": "Titre de l'alerte (anglais)",
+            "de": "Titel der Warnung (Englisch)",
+            "es": "Título de la alerta (inglés)"
+          }
+        },
+        {
+          "key": "text",
+          "type": "string",
+          "label": {
+            "en": "Category and title",
+            "fr": "Catégorie et titre",
+            "de": "Kategorie und Titel",
+            "es": "Categoría y título"
+          }
+        },
+        {
+          "key": "url",
+          "type": "string",
+          "label": {
+            "en": "Link to the alert",
+            "fr": "Lien vers l'alerte",
+            "de": "Link zur Warnung",
+            "es": "Enlace a la alerta"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
+      "key": "read_alerts",
+      "label": {
+        "en": "Read the park alerts",
+        "fr": "Lire les alertes des parcs",
+        "de": "Park-Warnungen lesen",
+        "es": "Leer las alertas de los parques"
+      },
       "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+        "en": "The current alerts of your parks in a sentence, to send by message or read aloud.",
+        "fr": "Les alertes en cours de vos parcs en une phrase, à envoyer par message ou lire à voix haute.",
+        "de": "Die aktuellen Warnungen deiner Parks in einem Satz, zum Senden oder Vorlesen.",
+        "es": "Las alertas actuales de sus parques en una frase, para enviar por mensaje o leer en voz alta."
       },
       "timeout_seconds": 15,
       "fields": [
         {
-          "key": "device",
-          "type": "select",
+          "key": "parks",
+          "type": "multi_select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "required": false,
+          "label": {
+            "en": "Parks",
+            "fr": "Parcs",
+            "de": "Parks",
+            "es": "Parques"
+          },
+          "description": {
+            "en": "Empty: every park added to Gladys.",
+            "fr": "Vide : tous les parcs ajoutés à Gladys.",
+            "de": "Leer: alle zu Gladys hinzugefügten Parks.",
+            "es": "Vacío: todos los parques añadidos a Gladys."
+          }
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "text",
+          "type": "string",
+          "label": {
+            "en": "Alerts, in a sentence",
+            "fr": "Alertes, en une phrase",
+            "de": "Warnungen, in einem Satz",
+            "es": "Alertas, en una frase"
+          }
+        },
+        {
+          "key": "count",
+          "type": "number",
+          "label": {
+            "en": "Number of alerts",
+            "fr": "Nombre d'alertes",
+            "de": "Anzahl der Warnungen",
+            "es": "Número de alertas"
+          }
+        },
+        {
+          "key": "closures",
+          "type": "number",
+          "label": {
+            "en": "Closure alerts",
+            "fr": "Alertes fermeture",
+            "de": "Schließungswarnungen",
+            "es": "Alertas de cierre"
+          }
+        },
+        {
+          "key": "dangers",
+          "type": "number",
+          "label": {
+            "en": "Danger alerts",
+            "fr": "Alertes danger",
+            "de": "Gefahrenwarnungen",
+            "es": "Alertas de peligro"
+          }
+        },
+        {
+          "key": "top_category",
+          "type": "string",
+          "label": {
+            "en": "Most serious category (none, closure, danger…)",
+            "fr": "Catégorie la plus grave (none, closure, danger…)",
+            "de": "Schwerste Kategorie (none, closure, danger…)",
+            "es": "Categoría más grave (none, closure, danger…)"
+          }
         }
       ]
-    }
-  ],
-  "widgets": [
-    {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
-      },
-      "icon": "activity",
-      "action_timeout_seconds": 15
     }
   ]
 }

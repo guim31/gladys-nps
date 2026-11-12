@@ -1,0 +1,25 @@
+{
+  "total": "2",
+  "limit": "50",
+  "start": "0",
+  "data": [
+    {
+      "id": "C08AD828-98FF-478E-A63C-614E7534274B",
+      "url": "https://www.nps.gov/alca/index.htm",
+      "fullName": "Alcatraz Island",
+      "parkCode": "alca",
+      "states": "CA",
+      "designation": "",
+      "name": "Alcatraz Island"
+    },
+    {
+      "id": "6E3608BE-63AA-4379-A543-97D2FCBF12F1",
+      "url": "https://www.nps.gov/stli/index.htm",
+      "fullName": "Statue Of Liberty National Monument",
+      "parkCode": "stli",
+      "states": "NY",
+      "designation": "National Monument",
+      "name": "Statue Of Liberty"
+    }
+  ]
+}

@@ -30,6 +30,12 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+The integration stores in its `/data` volume only the ids of the NPS alerts
+already seen (`nps.json`). Your api.data.gov key stays in the Gladys
+configuration: it is sent only to `developer.nps.gov`, in the `X-Api-Key`
+header, and never written to the logs. The container makes outgoing HTTPS
+requests to `developer.nps.gov` only, and listens on no port.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and the National Park Service API.

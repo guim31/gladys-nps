@@ -1,77 +1,91 @@
+// -----------------------------------------------------------------------------
+// The "alerts" widget: valid for the core, most serious first, the names given
+// in Gladys, every optional block can be hidden.
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { buildDiscoveredDevices } from '../src/devices/index.js';
-import { simulateLanSession } from '../src/devices/plug.js';
-import { DEMO_STATUS_WIDGET, WIDGETS, refreshWidgets } from '../src/widgets.js';
-import { normalizeConfig } from '../src/config.js';
+import { create, createWorld } from './helpers/world.js';
 
-const gladys = createFakeGladys();
-const config = normalizeConfig();
-const demoStatus = WIDGETS[DEMO_STATUS_WIDGET];
+async function widget(world, settings = {}, language = 'en') {
+  const ack = await world.fake.widgetGet('alerts', { settings, language });
+  assert.equal(ack.success, true, ack.error);
+  const content = ack.data.content;
+  assert.deepEqual(validateWidgetContent(content), []);
+  return content;
+}
 
-// What the SDK passes to onWidgetGet, plus the config index.js adds.
-const getContent = (cfg = config) =>
-  demoStatus.get(gladys, { settings: {}, language: 'en', units: 'metric', config: cfg });
+const of = (content, type) => content.components.filter((c) => c.type === type);
 
-test('the demo_status content is rendered exactly as sent', async () => {
-  // [] = nothing the core would drop, truncate or trim to the content budget.
-  assert.deepEqual(validateWidgetContent(await getContent()), []);
+test('no park added: the widget says where to add one', async (t) => {
+  const world = await createWorld();
+  t.after(() => world.app.stop());
+  const content = await widget(world);
+  assert.match(content.components[0].text, /Discover tab/);
 });
 
-test('the degraded plug connection content is valid too', async () => {
-  simulateLanSession(false);
-  try {
-    const content = await getContent();
-    assert.deepEqual(validateWidgetContent(content), []);
-    const status = content.components.find((component) => component.type === 'status');
-    assert.ok(
-      status.items.some((item) => item.color === 'warning'),
-      'degraded shows a warning',
-    );
-  } finally {
-    simulateLanSession(true);
-  }
-});
-
-test('the live tiles reference features the integration publishes', async () => {
-  const featureIds = new Set(
-    buildDiscoveredDevices(gladys, config).flatMap((device) =>
-      device.features.map((feature) => feature.external_id),
-    ),
+test('the alerts of several parks, most serious first, with the names given in Gladys', async (t) => {
+  const world = await createWorld();
+  t.after(() => world.app.stop());
+  const yose = await create(world, 'yose');
+  await create(world, 'grca');
+  await world.fake.deviceUpdated({ ...yose, name: 'Yosemite' });
+  const content = await widget(world);
+  const [caption] = of(content, 'text');
+  assert.equal(caption.text, 'Grand Canyon National Park: 4 alerts · Yosemite: 2 alerts');
+  const [status] = of(content, 'status');
+  assert.deepEqual(
+    status.items.map((item) => [item.label, item.color]),
+    [
+      ['Grand Canyon National Park · Closure', 'danger'],
+      ['Yosemite · Closure', 'danger'],
+      ['Grand Canyon National Park · Danger', 'danger'],
+      ['Grand Canyon National Park · Caution', 'warning'],
+      ['Grand Canyon National Park · Caution', 'warning'],
+      ['Yosemite · Information', 'info'],
+    ],
   );
-  const liveTiles = (await getContent()).components.filter((c) => c.device_feature);
-  assert.ok(liveTiles.length > 0, 'the template demonstrates a device-bound tile');
-  for (const tile of liveTiles) {
-    assert.ok(featureIds.has(tile.device_feature), `unknown feature ${tile.device_feature}`);
+  for (const item of status.items) {
+    assert.ok(item.label.length <= 40 && item.value.length <= 40, item.label);
   }
+  // Two parks: no single conditions page to link to.
+  assert.equal(of(content, 'button').length, 0);
 });
 
-test('every button action of the content is handled and answers a short toast', async () => {
-  const buttons = (await getContent()).components.filter((c) => c.type === 'button' && c.action);
-  assert.ok(buttons.length > 0, 'the template demonstrates a widget action');
-  for (const { action } of buttons) {
-    const message = await demoStatus.action(gladys, {
-      actionKey: action.key,
-      params: action.params ?? {},
-      settings: {},
-      config,
-    });
-    assert.ok(message.en, 'the toast carries at least the mandatory `en` text');
-    assert.ok(message.en.length <= 200, 'toasts are capped at 200 characters');
-  }
-});
-
-test('an unknown widget action fails, so the user sees the error', async () => {
-  await assert.rejects(
-    demoStatus.action(gladys, { actionKey: 'unknown', params: {}, settings: {}, config }),
-    /Unknown widget action/,
+test('one park: link to its conditions page; information, count and link can be hidden', async (t) => {
+  const world = await createWorld();
+  t.after(() => world.app.stop());
+  const yose = await create(world, 'yose');
+  await create(world, 'grca');
+  const one = await widget(world, { parks: [yose.external_id] }, 'fr');
+  assert.deepEqual(
+    of(one, 'status')[0].items.map((item) => item.label),
+    ['Fermeture', 'Information'],
   );
+  assert.equal(
+    of(one, 'button')[0].link.url,
+    'https://www.nps.gov/yose/planyourvisit/conditions.htm',
+  );
+  const bare = await widget(world, {
+    parks: [yose.external_id],
+    show_information: false,
+    show_summary: false,
+    show_link: false,
+  });
+  assert.deepEqual(
+    bare.components.map((c) => c.type),
+    ['status'],
+  );
+  assert.equal(bare.components[0].items.length, 1);
 });
 
-test('refreshWidgets nudges every widget', () => {
-  const fresh = createFakeGladys();
-  refreshWidgets(fresh);
-  assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+test('a park without alert says so', async (t) => {
+  const world = await createWorld({ config: { parks: ['yose'] } });
+  t.after(() => world.app.stop());
+  world.service.park('yose');
+  await create(world, 'yose');
+  world.service.parks.get('yose').alerts = [];
+  const content = await widget(world, { show_summary: false });
+  assert.equal(content.components[0].text, 'No alert in the chosen parks.');
 });
