@@ -141,14 +141,14 @@ schwerste Kategorie (`none`, `closure`, `danger`, `caution`, `information`).
   Schlüssel; `DEMO_KEY` teilen sich alle Nutzer einer Adresse, begrenzt auf
   wenige Anfragen pro Stunde: genug für einen Test, nicht für den Alltag.
 - Bei einem ungültigen Schlüssel oder einem erreichten Limit zeigt die
-  Integration das auf ihrer Seite an, pausiert nach einem Limit eine Stunde und
+  Integration das auf ihrer Seite an, pausiert nach einem Limit (so lange wie von der API verlangt, höchstens zwei Stunden) und
   behält die letzten Werte.
 
 ## Fehlerbehebung
 
 - **„Der NPS-API-Schlüssel ist ungültig“**: prüfe den Schlüssel (ohne
   Leerzeichen) oder leere das Feld, um es mit `DEMO_KEY` zu versuchen.
-- **„Stundenlimit der NPS-API erreicht“**: hol dir deinen eigenen Schlüssel
+- **„Anfragelimit der NPS-API erreicht“**: hol dir deinen eigenen Schlüssel
   (siehe oben).
 - **Eine eingegebene Stätte erscheint nicht**: die Schaltfläche **Status**
   listet die Codes, die der NPS nicht kennt; prüfe den Code in der

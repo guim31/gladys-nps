@@ -142,14 +142,14 @@ categoría más grave (`none`, `closure`, `danger`, `caution`, `information`).
   limitada a pocas solicitudes por hora: suficiente para una prueba, no para
   el uso diario.
 - Ante una clave no válida o un límite alcanzado, la integración lo indica en
-  su página, hace una pausa de una hora tras un límite y conserva los últimos
+  su página, hace una pausa tras un límite (el tiempo que pida la API, dos horas como máximo) y conserva los últimos
   valores.
 
 ## Solución de problemas
 
 - **«La clave de la API NPS no es válida»**: verifique la clave (sin espacios),
   o vacíe el campo para probar con `DEMO_KEY`.
-- **«Límite por hora de la API NPS alcanzado»**: obtenga su propia clave (vea
+- **«Límite de solicitudes de la API NPS alcanzado»**: obtenga su propia clave (vea
   arriba).
 - **Un sitio introducido no aparece**: el botón **Estado** lista los códigos
   que el NPS no conoce; verifique el código en la dirección nps.gov.

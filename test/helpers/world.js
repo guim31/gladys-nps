@@ -58,7 +58,12 @@ const respond = (status, body) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 export const invalidKey = () => respond(403, fixtureJson('error-api-key-invalid.json'));
-export const overRateLimit = () => respond(429, fixtureJson('error-over-rate-limit.json'));
+// The real 429 of 2026-11-12 asked to come back 15 hours later.
+export const overRateLimit = () => {
+  const response = respond(429, fixtureJson('error-over-rate-limit.json'));
+  response.headers.set('retry-after', '56419');
+  return response;
+};
 
 /**
  * A fake `fetch`. `routes.alerts|events|parks` override an endpoint: a status

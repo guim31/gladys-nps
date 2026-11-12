@@ -42,7 +42,7 @@ save, and add them from the **Discover** tab.
 - Devices are published with `should_poll: false`: the container refreshes on
   its own timer.
 - An invalid key or a reached hourly limit shows on the integration page; the
-  integration pauses for an hour after a limit and keeps the last values.
+  integration pauses after a limit (as the API asks, two hours at most) and keeps the last values.
 - The alerts already seen are kept in `/data/nps.json`, so a restart fires no
   trigger for an old alert.
 

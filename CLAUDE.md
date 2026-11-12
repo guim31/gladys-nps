@@ -266,7 +266,7 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
   appel groupé `/alerts?parkCode=a,b,c` par cycle, `/events` toutes les 6 h, et un cycle de 60 min par défaut. La clé
   part dans l'en-tête `X-Api-Key`, jamais dans l'URL.
 - Refus d'api.data.gov en JSON `{ error: { code, message } }` : 403 `API_KEY_INVALID` / `API_KEY_MISSING`, 429
-  `OVER_RATE_LIMIT` (fenêtre glissante d'une heure, pas de `Retry-After` : pause d'une heure). Le code est gardé
+  `OVER_RATE_LIMIT` avec un `Retry-After` qui peut valoir 15 h (vu avec `DEMO_KEY`) : pause suivie mais plafonnée à 2 h. Le code est gardé
   sur `HttpError.code` et rendu par `setConnectionStatus(false, {en,fr,de,es})`.
 - `/events` plafonne `pageSize` à **50** quoi qu'on demande : pagination par `pageNumber`, quatre pages au plus.
   Dates (`dates[]`) et heures (`times[0].timestart`, « 06:30 PM ») sont en heure locale du parc **sans fuseau** :

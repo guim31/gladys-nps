@@ -145,13 +145,13 @@ catégorie la plus grave (`none`, `closure`, `danger`, `caution`,
   limitée à quelques requêtes par heure : assez pour un essai, pas pour un
   usage quotidien.
 - Sur une clé invalide ou une limite atteinte, l'intégration le dit sur sa page,
-  fait une pause d'une heure après une limite, et garde les dernières valeurs.
+  fait une pause après une limite (le temps demandé par l'API, deux heures au plus), et garde les dernières valeurs.
 
 ## Dépannage
 
 - **« La clé de l'API NPS n'est pas valide »** : vérifiez la clé (sans espace),
   ou videz le champ pour essayer avec `DEMO_KEY`.
-- **« Limite horaire de l'API NPS atteinte »** : prenez votre propre clé (voir
+- **« Limite de requêtes de l'API NPS atteinte »** : prenez votre propre clé (voir
   plus haut).
 - **Un site saisi n'apparaît pas** : le bouton **État** liste les codes que le
   NPS ne connaît pas ; vérifiez le code dans l'adresse nps.gov.

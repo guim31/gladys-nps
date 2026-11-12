@@ -155,13 +155,15 @@ test('an invalid key: clear status on the integration page, back when fixed', as
   assert.equal(world.fake.connectionStatus.connected, true);
 });
 
-test('the hourly limit reached: clear status, then no request for an hour', async (t) => {
+test('the request limit reached: clear status, then no request for two hours at most', async (t) => {
   const network = createFetch({ alerts: overRateLimit });
   const world = await createWorld({ config: { parks: ['yose'] }, network });
   t.after(() => world.app.stop());
   assert.deepEqual(world.fake.connectionStatus.message, STATUS.rateLimit);
   const before = network.calls.length;
   await cycle(world, 30);
+  assert.equal(network.calls.length, before);
+  await cycle(world, 60);
   assert.equal(network.calls.length, before);
   delete network.routes.alerts;
   await cycle(world, 31);

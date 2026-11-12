@@ -22,10 +22,10 @@ export const STATUS = {
     es: 'La clave de la API NPS no es válida: verifíquela en la configuración.',
   },
   rateLimit: {
-    en: 'Hourly limit of the NPS API reached: get your own free key (see the guide).',
-    fr: "Limite horaire de l'API NPS atteinte : prenez votre propre clé gratuite (voir le guide).",
-    de: 'Stundenlimit der NPS-API erreicht: hol dir deinen eigenen kostenlosen Schlüssel (siehe Anleitung).',
-    es: 'Límite por hora de la API NPS alcanzado: obtenga su propia clave gratuita (vea la guía).',
+    en: 'Request limit of the NPS API reached: get your own free key (see the guide).',
+    fr: "Limite de requêtes de l'API NPS atteinte : prenez votre propre clé gratuite (voir le guide).",
+    de: 'Anfragelimit der NPS-API erreicht: hol dir deinen eigenen kostenlosen Schlüssel (siehe Anleitung).',
+    es: 'Límite de solicitudes de la API NPS alcanzado: obtenga su propia clave gratuita (vea la guía).',
   },
   unreachable: {
     en: 'The NPS API does not answer: the alerts will be read again at the next refresh.',

@@ -133,13 +133,13 @@ alert count, closure alerts, danger alerts, and the most serious category
   is shared by every user of an address and limited to a few requests an hour:
   enough for a test, not for daily use.
 - On an invalid key or a reached limit, the integration says so on its page,
-  pauses for an hour after a limit, and keeps the last values.
+  pauses after a limit (as long as the API asks, two hours at most), and keeps the last values.
 
 ## Troubleshooting
 
 - **"The NPS API key is not valid"**: check the key (no space), or empty the
   field to try with `DEMO_KEY`.
-- **"Hourly limit of the NPS API reached"**: get your own key (see above).
+- **"Request limit of the NPS API reached"**: get your own key (see above).
 - **A typed site does not appear**: the **Status** button lists the codes the
   NPS does not know; check the code in the nps.gov address.
 - **Logs**: in Gladys, the integration's container logs; set `LOG_LEVEL=debug`

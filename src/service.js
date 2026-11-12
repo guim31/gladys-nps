@@ -30,8 +30,11 @@ export const HEARTBEAT_MS = 12 * HOUR;
 export const EVENTS_MS = 6 * HOUR;
 // Days of events asked for: enough to always know the next one.
 export const EVENT_DAYS = 31;
-// Pause after a 429: api.data.gov counts requests over a rolling hour.
+// Pause after a 429: api.data.gov counts requests over a rolling hour, and its
+// Retry-After can ask for many hours (15 h seen with DEMO_KEY): the pause
+// follows it, capped, so a new day or a new key is noticed in time.
 export const RATE_LIMIT_PAUSE_MS = HOUR;
+export const MAX_PAUSE_MS = 2 * HOUR;
 
 export const TRIGGERS = { NEW_ALERT: 'new_alert' };
 export const WIDGET_KEY = 'alerts';
@@ -450,10 +453,14 @@ export class NationalParks {
     };
   }
 
+  pause(err, now) {
+    this.backoffUntil = now + Math.min(err.retryAfterMs ?? RATE_LIMIT_PAUSE_MS, MAX_PAUSE_MS);
+  }
+
   async failed(err, now) {
     const key = statusOf(err);
     if (key === 'rateLimit') {
-      this.backoffUntil = now + (err.retryAfterMs ?? RATE_LIMIT_PAUSE_MS);
+      this.pause(err, now);
     }
     if (this.error?.key !== key) {
       const hint =
@@ -499,7 +506,7 @@ export class NationalParks {
     } catch (err) {
       logger.debug(`Events unavailable: ${err.message}`);
       if (statusOf(err) === 'rateLimit') {
-        this.backoffUntil = now + (err.retryAfterMs ?? RATE_LIMIT_PAUSE_MS);
+        this.pause(err, now);
       }
     }
   }
