@@ -96,7 +96,7 @@ export function parseClock(value) {
 
 /**
  * The occurrences of an event of the API, sorted: `{ start, allDay }`, from
- * its `dates` and the first of its `times`, minus the cancelled dates.
+ * its `dates` and each of its `times`, minus the cancelled dates.
  */
 export function eventOccurrences(raw, zone) {
   const safe = safeZone(zone);
@@ -104,12 +104,21 @@ export function eventOccurrences(raw, zone) {
   const dates = (Array.isArray(raw?.dates) ? raw.dates : []).filter(
     (date) => /^\d{4}-\d{2}-\d{2}$/.test(date) && !cancelled.has(date),
   );
-  const clock = String(raw?.isallday) === 'true' ? null : parseClock(raw?.times?.[0]?.timestart);
+  // An event can run several times a day (a 10:00 and a 14:00 tour).
+  const clocks =
+    String(raw?.isallday) === 'true'
+      ? []
+      : (Array.isArray(raw?.times) ? raw.times : [])
+          .map((time) => parseClock(time?.timestart))
+          .filter(Boolean);
   return dates
-    .map((date) =>
-      clock
-        ? { start: zonedTime(date, clock.hour, clock.minute, safe), allDay: false }
-        : { start: zonedTime(date, 0, 0, safe), allDay: true, date },
+    .flatMap((date) =>
+      clocks.length > 0
+        ? clocks.map((clock) => ({
+            start: zonedTime(date, clock.hour, clock.minute, safe),
+            allDay: false,
+          }))
+        : [{ start: zonedTime(date, 0, 0, safe), allDay: true, date }],
     )
     .sort((a, b) => a.start - b.start);
 }

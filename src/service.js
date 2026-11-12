@@ -35,6 +35,8 @@ export const EVENT_DAYS = 31;
 // follows it, capped, so a new day or a new key is noticed in time.
 export const RATE_LIMIT_PAUSE_MS = HOUR;
 export const MAX_PAUSE_MS = 2 * HOUR;
+// A reading younger than this is not done again for a scan or a reconnection.
+export const FRESH_MS = 10 * MINUTE;
 
 export const TRIGGERS = { NEW_ALERT: 'new_alert' };
 export const WIDGET_KEY = 'alerts';
@@ -109,8 +111,9 @@ export class NationalParks {
   /** Gladys restarted: everything again, the states included. */
   async resync(config) {
     this.config = config;
+    this.statusKey = undefined;
     this.gladys.forgetPublishedStates?.();
-    await this.refresh({ discover: true });
+    await this.refresh({ discover: true, ifFresh: true });
   }
 
   async reconfigure(config) {
@@ -237,7 +240,7 @@ export class NationalParks {
     const language = this.config.language;
     // The parks the NPS does not know are not offered.
     const devices = this.config.parks
-      .filter((code) => !this.unknown.includes(code))
+      .filter((code) => !this.unknown.includes(code) && this.park(code).named)
       .map((code) => buildParkDevice(this.gladys, this.park(code), language));
     const signature = JSON.stringify(devices.map((d) => [d.external_id, d.name, d.features]));
     if (!force && signature === this.discoveredSignature) {
@@ -303,7 +306,10 @@ export class NationalParks {
       key
         ? this.gladys.setConnectionStatus(false, STATUS[key])
         : this.gladys.setConnectionStatus(true)
-    ).catch(() => {});
+    ).catch(() => {
+      // Sent again at the next reading.
+      this.statusKey = undefined;
+    });
   }
 
   // --- reading ----------------------------------------------------------------
@@ -312,7 +318,12 @@ export class NationalParks {
    * One reading of every active park; concurrent calls share it. `ifDue`
    * (the core's poll, a fallback) skips it when the last one is recent.
    */
-  refresh({ discover = false, ifDue = false } = {}) {
+  refresh({ discover = false, ifDue = false, ifFresh = false } = {}) {
+    // A scan or a reconnection right after a reading: republish what is
+    // known, without spending the quota (DEMO_KEY: 10 requests an hour).
+    if (ifFresh && this.okAt !== null && this.now() - this.okAt < FRESH_MS) {
+      return this.republish();
+    }
     if (
       ifDue &&
       this.okAt !== null &&
@@ -329,6 +340,14 @@ export class NationalParks {
       return this.refreshing;
     }
     return discover ? this.refreshing.then(() => this.refresh({ discover })) : this.refreshing;
+  }
+
+  async republish() {
+    if (this.statusKey === undefined) {
+      await this.setStatus(this.error?.key ?? null);
+    }
+    await this.publishDiscovered({ force: true });
+    await this.publish(this.watched().flatMap((entry) => this.statesOf(entry.code)));
   }
 
   async refreshAll(forceDiscovery) {
@@ -369,8 +388,13 @@ export class NationalParks {
         const info = found.get(code);
         const park = this.park(code);
         if (info) {
+          const zone = safeZone(STATE_ZONES[info.states[0]] ?? park.zone);
+          if (zone !== park.zone) {
+            // Events already placed in the wrong zone: read again.
+            this.eventsAt = null;
+          }
           park.name = info.name;
-          park.zone = safeZone(STATE_ZONES[info.states[0]] ?? park.zone);
+          park.zone = zone;
           park.named = true;
         }
       }
@@ -490,14 +514,20 @@ export class NationalParks {
     // have started yet.
     const from = addDays(day, -1);
     try {
-      const events = await readEvents(this.fetch, this.config.apiKey, codes, {
+      const { events, complete } = await readEvents(this.fetch, this.config.apiKey, codes, {
         from,
         to: addDays(from, EVENT_DAYS),
         zoneOf: (code) => this.park(code).zone,
         now,
       });
       for (const code of codes) {
-        this.park(code).events = events.filter((event) => event.park === code);
+        const own = events.filter((event) => event.park === code);
+        // Past the page cap, a park without events read may have some
+        // further on: "unknown" (last value kept), never "no event".
+        this.park(code).events = own.length > 0 || complete ? own : null;
+      }
+      if (!complete) {
+        logger.debug(`Events cut at ${events.length}: too many parks for one reading`);
       }
       this.eventsAt = now;
       this.eventsDay = day;

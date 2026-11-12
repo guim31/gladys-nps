@@ -63,7 +63,7 @@ export function registerHandlers(gladys, options = {}) {
   // spending the API quota: a recent reading is not done again.
   gladys.onPoll(whenReady(() => service.refresh({ ifDue: true })));
 
-  gladys.onScanRequest(whenReady(() => service.refresh({ discover: true })));
+  gladys.onScanRequest(whenReady(() => service.refresh({ discover: true, ifFresh: true })));
 
   gladys.onDeviceCreated(whenReady((device) => service.onDeviceCreated(device)));
 

@@ -89,7 +89,8 @@ export async function readAlerts(fetchImpl, apiKey, codes, now) {
 
 /**
  * The events of the parks between two dates ("YYYY-MM-DD"), with their
- * occurrences in time: `{ id, park, title, occurrences: [{ start, allDay }] }`.
+ * occurrences in time: `{ events: [{ id, park, title, occurrences }], complete }`.
+ * `complete` is false when more pages remained than MAX_EVENT_PAGES.
  * `zoneOf(code)` gives the time zone of a park.
  */
 export async function readEvents(fetchImpl, apiKey, codes, { from, to, zoneOf, now }) {
@@ -111,10 +112,10 @@ export async function readEvents(fetchImpl, apiKey, codes, { from, to, zoneOf, n
       });
     }
     if (data.length < EVENT_PAGE_SIZE || page * EVENT_PAGE_SIZE >= Number(document?.total)) {
-      break;
+      return { events, complete: true };
     }
   }
-  return events;
+  return { events, complete: false };
 }
 
 /** Name and states of NPS sites: `Map(code → { name, states })`. */

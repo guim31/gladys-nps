@@ -293,3 +293,56 @@ test('the scene action reads the alerts of the parks picked', async (t) => {
     /^Yosemite National Park: 2 alerts\. Closure: Tioga Road .* ; Information: /,
   );
 });
+
+test('an event held several times a day: the next session of the day counts', async (t) => {
+  const network = createFetch();
+  // Keep only the Valley Floor Tour of Yosemite: 10:00 AM and 02:00 PM.
+  network.documents.events.data = network.documents.events.data.filter((e) =>
+    e.title.startsWith('Valley Floor Tour'),
+  );
+  const world = await createWorld({ config: { parks: ['yose'], language: 'en' }, network });
+  t.after(() => world.app.stop());
+  const yose = await create(world, 'yose');
+  // 11:00 in Yosemite: the morning tour has started, the 2 PM one is next.
+  world.clock.time = Date.UTC(2026, 10, 12, 19, 0);
+  await world.service.refresh();
+  assert.match(state(world, yose, 'next_event'), /^Thu, Nov 12, 02:00 PM · Valley Floor Tour/);
+});
+
+test('a scan or a reconnection right after a reading spends no request', async (t) => {
+  const network = createFetch();
+  const world = await createWorld({ network });
+  t.after(() => world.app.stop());
+  network.calls.length = 0;
+  await world.fake.scanRequest();
+  await world.app.service.resync(world.service.config);
+  assert.equal(network.calls.length, 0);
+  assert.equal(world.fake.discoveredDevices.length, 2);
+  world.clock.advance(11 * 60 * 1000);
+  await world.fake.scanRequest();
+  assert.equal(network.calls.length, 1);
+});
+
+test('a connection status Gladys failed to receive is sent again', async (t) => {
+  const network = createFetch({ alerts: invalidKey });
+  const world = await createWorld({
+    config: { parks: ['yose'], api_key: 'bad' },
+    network,
+    connect: false,
+  });
+  t.after(() => world.app.stop());
+  let fail = true;
+  const original = world.gladys.setConnectionStatus.bind(world.gladys);
+  t.mock.method(world.gladys, 'setConnectionStatus', async (...args) => {
+    if (fail) {
+      fail = false;
+      throw new Error('Gladys not ready');
+    }
+    return original(...args);
+  });
+  await world.gladys.connect();
+  await world.app.ready;
+  await world.service.loading;
+  await cycle(world, 130);
+  assert.deepEqual(world.fake.connectionStatus.message, STATUS.keyInvalid);
+});
