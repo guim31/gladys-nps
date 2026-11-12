@@ -523,7 +523,7 @@ export class NationalParks {
       for (const code of codes) {
         const own = events.filter((event) => event.park === code);
         // Past the page cap, a park without events read may have some
-        // further on: "unknown" (last value kept), never "no event".
+        // further on: unknown (not republished, Gladys keeps its last value).
         this.park(code).events = own.length > 0 || complete ? own : null;
       }
       if (!complete) {
